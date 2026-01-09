@@ -4,72 +4,82 @@
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const form = document.querySelector('.form');
-const containerWorkouts = document.querySelector('.workouts');
+const containerIncidences = document.querySelector('.incidences');
 const inputType = document.querySelector('.form__input--type');
-const inputDistance = document.querySelector('.form__input--distance');
-const inputDuration = document.querySelector('.form__input--duration');
-const inputCadence = document.querySelector('.form__input--cadence');
-const inputElevation = document.querySelector('.form__input--elevation');
 
-class Workout {
+const inputSurface = document.querySelector('.form__input--surface');
+const inputTrash = document.querySelector('.form__input--trash');
+const inputDescription = document.querySelector('.form__input--description');
+
+class Incidence {
   date = new Date();
-  id = (Date.now() + '').slice();
+  coords;
+  id = (Date.now() + '').slice(-10);
 
-  constructor(coords, distance, duration) {
+  constructor(coords, urgencyLevel, description) {
     this.coords = coords;
-    this.distance = distance;
-    this.duration = duration;
-  }
-  _setDescription() {
-    //prettier-ignore
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-    this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${
-      months[this.date.getMonth()]
-    } ${this.date.getDate()} `;
+    this.urgencyLevel = urgencyLevel;
+    this.description = description;
   }
 }
 
-class Running extends Workout {
-  type = 'running';
-  constructor(coords, distance, duration, cadence) {
-    super(coords, distance, duration);
-    this.cadence = cadence;
-    this.calcPace();
-    this._setDescription();
-  }
-  calcPace() {
-    this.pace = this.duration / this.distance;
-    return this.pace;
+class Infrastucture extends Incidence {
+  type = 'infrastucture';
+  constructor(coords, urgencyLevel, description, surface) {
+    super(coords, urgencyLevel, description);
+    this.surface = surface;
   }
 }
 
-class Cycling extends Workout {
-  type = 'cycling';
-  constructor(coords, distance, duration, elevationGain) {
-    super(coords, distance, duration);
-    this.elevationGain = elevationGain;
-    this.calcSpeed();
-    this._setDescription();
-  }
-
-  calcSpeed() {
-    this.speed = this.distance / (this.duration / 60);
+class Maintenance extends Incidence {
+  type = 'maintenance';
+  constructor(coords, urgencyLevel, description, trashType) {
+    super(coords, urgencyLevel, description);
+    this.trashType = trashType;
   }
 }
 
+//------------- APP ------------------
 class App {
   #map;
   #mapEvent;
-  #workouts = [];
+  #incidences = [];
 
   constructor() {
+    //Get users position
     this._getPosition();
-    form.addEventListener('submit', this._newWorkout.bind(this)); //We need to bind becouse in eventhandlers, this points to form, in this case
 
-    inputType.addEventListener('change', this._toggleElevationField);
+    //Get data from local storage
+    this.getLocalStorage();
+
+    //Event Handlers
+    form.addEventListener('submit', this._newIncidence.bind(this));
+
+    inputType.addEventListener('change', this._toggleField.bind(this));
+    containerIncidences.addEventListener('click', this.moveToPopup.bind(this));
+
+    containerIncidences.addEventListener(
+      'click',
+      this._deleteIncidence.bind(this)
+    );
   }
+  //************** EVENT HANDLERS ***********
 
+  _deleteIncidence(e) {
+    const btn = e.target.closest('.incidence__btn-delete');
+    if (!btn) return;
+
+    const incidenceEl = btn.closest('.incidence');
+    const incidenceId = incidenceEl.dataset.id;
+
+    const index = this.#incidences.findIndex(
+      incidence => incidence.id === incidenceId
+    );
+    this.#incidences.splice(index, 1);
+    incidenceEl.remove();
+    this.setLocalStorage();
+    console.log(this.#incidences);
+  }
   _getPosition() {
     navigator.geolocation.getCurrentPosition(
       this._loadMap.bind(this),
@@ -83,8 +93,11 @@ class App {
     const { latitude } = position.coords;
     const { longitude } = position.coords;
     const coords = [latitude, longitude];
+    console.log(coords);
     this.#map = L.map('map').setView(coords, 13);
-
+    this.#incidences.forEach(incidence => {
+      this._renderMarker(incidence);
+    });
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -96,24 +109,25 @@ class App {
   _showForm(mapE) {
     this.#mapEvent = mapE;
     form.classList.remove('hidden');
-    inputDistance.focus();
   }
 
   _hideForm() {
-    //Clear inputs fields
-    inputCadence.value = inputDistance.value = inputDuration.value = '';
-
+    inputDescription.value = inputSurface.value = inputTrash.value = '';
+    document.getElementById('u1').checked = true;
     form.style.display = 'none';
     form.classList.add('hidden');
     setTimeout(() => (form.style.display = 'grid'), 1000);
   }
-  _toggleElevationField() {
-    inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
-    inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
+  _toggleField() {
+    inputSurface.closest('.form__row').classList.toggle('form__row--hidden');
+    inputTrash.closest('.form__row').classList.toggle('form__row--hidden');
   }
 
-  _newWorkout(e) {
+  _newIncidence(e) {
     e.preventDefault();
+    const inputUrgency = +document.querySelector(
+      'input[name="urgency"]:checked'
+    ).value;
 
     //check if values are ok
     const validInputs = (...inputs) =>
@@ -122,42 +136,39 @@ class App {
     const positiveValues = (...values) => values.every(inp => inp > 0);
 
     const type = inputType.value;
-    const distance = +inputDistance.value;
-    const duration = +inputDuration.value;
+    const urgencyLevel = inputUrgency;
+    const description = inputDescription.value;
     const { lat, lng } = this.#mapEvent.latlng;
-    let workout;
+    const coords = [lat, lng];
+    let incidence;
+    console.log(urgencyLevel);
+    if (type === 'infrastucture') {
+      const surface = +inputSurface.value;
 
-    if (type === 'cycling') {
-      const elevation = +inputElevation.value;
+      if (!validInputs(surface) || !positiveValues(surface))
+        return alert('Las unidades deben estar en positivo');
 
-      if (
-        !validInputs(distance, duration, elevation) ||
-        !positiveValues(distance, duration)
-      )
-        return alert('Inputs must be positive numbers');
-
-      workout = new Cycling([lat, lng], distance, duration, elevation);
+      incidence = new Infrastucture(coords, urgencyLevel, description, surface);
     }
 
-    if (type === 'running') {
-      const cadence = +inputCadence.value;
-      if (
-        !validInputs(distance, duration, cadence) ||
-        !positiveValues(distance, duration, cadence)
-      )
+    if (type === 'maintenance') {
+      const trashType = inputTrash.value;
+      if (!validInputs(urgencyLevel))
         return alert('Inputs must be positive numbers');
-      workout = new Running([lat, lng], distance, duration, cadence);
+      incidence = new Maintenance(coords, urgencyLevel, description, trashType);
     }
 
-    this.#workouts.push(workout);
+    this.#incidences.push(incidence);
+    console.log(this.#incidences);
 
-    this._renderMarker(workout);
+    this._renderMarker(incidence);
     this._hideForm();
-    this._renderWorkout(workout);
+    this._renderIncidence(incidence);
+    this.setLocalStorage();
   }
 
-  _renderMarker(workout) {
-    L.marker(workout.coords)
+  _renderMarker(incidence) {
+    L.marker(incidence.coords)
       .addTo(this.#map)
       .bindPopup(
         L.popup({
@@ -165,59 +176,97 @@ class App {
           minWidth: 100,
           autoClose: false,
           closeOnClick: false,
-          className: `${workout.type} -popup`,
+          className: `${incidence.type} -popup`,
         })
       )
       .setPopupContent(
-        `${workout.type === 'running' ? '🏃‍♂️' : '🚴'} ${workout.description} `
+        `${
+          incidence.type === 'infrastucture' ? 'Infrastuctura' : 'Mantenimiento'
+        }`
       )
       .openPopup();
   }
 
-  _renderWorkout(workout) {
+  _renderIncidence(incidence) {
+    const dots = '●'.repeat(incidence.urgencyLevel).padEnd(5, '○');
     let html = `
-        <li class="workout workout--${workout.type} " data-id="${workout.id} ">
-          <h2 class="workout__title">${workout.description} </h2>
-          <div class="workout__details">
-            <span class="workout__icon">${
-              workout.type === 'running' ? '🏃‍♂️' : '🚴'
-            } </span>
-            <span class="workout__value">${workout.distance} </span>
-            <span class="workout__unit">km</span>
-          </div>-
-          <div class="workout__details">
-            <span class="workout__icon">⏱</span>
-            <span class="workout__value">${workout.duration} </span>
-            <span class="workout__unit">min</span>
-          </div>`;
+    <li class="incidence ${
+      incidence.type === 'infrastucture'
+        ? 'incidence__infrastucture'
+        : 'incidence__maintenance'
+    } incidence--${incidence.type}" data-id="${incidence.id}">
+  
+      <div class ="incidence__urgency-bar">
+      <span class="incidence__urgency-dots">${dots}</span>
+      <div class = "Incidence__container">
 
-    if (workout.type === 'running')
-      html += `<div class="workout__details">
-            <span class="workout__icon">⚡️</span>
-            <span class="workout__value">${workout.pace.toFixed(1)} </span>
-            <span class="workout__unit">min/km</span>
-          </div>
-          <div class="workout__details">
-            <span class="workout__icon">🦶🏼</span>
-            <span class="workout__value">${workout.cadence} </span>
-            <span class="workout__unit">spm</span>
-          </div>
-        </li>`;
+      <div class="incidence__header">
+        <h2 class="incidence__title">${incidence.description}</h2>
+        <button class="incidence__btn-delete" title="Eliminar">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      
+      </div>
+      
 
-    if (workout.type === 'cycling')
-      html += ` <div class="workout__details">
-            <span class="workout__icon">⚡️</span>
-            <span class="workout__value">${workout.speed.toFixed(1)} </span>
-            <span class="workout__unit">km/h</span>
-          </div>
-          <div class="workout__details">
-            <span class="workout__icon">⛰</span>
-            <span class="workout__value">${workout.elevationGain} </span>
-            <span class="workout__unit">m</span>
-          </div>
-        </li>`;
+      <div class="incidence__body">
+        <div class="incidence__data">
+       
+        <span class="incidence__value">
+        ${
+          incidence.type === 'infrastucture'
+            ? incidence.surface
+            : incidence.trashType
+        }</span>
+        <span class="incidence__unit">
+        ${incidence.type === 'infrastucture' ? 'm²' : 'Tipo de residuo:'}
+        </span>
+      
+      </div></div>
+    </li>`;
 
     form.insertAdjacentHTML('afterend', html);
+    console.log(incidence.type);
+    lucide.createIcons();
+  }
+
+  moveToPopup(e) {
+    const incidenceEl = e.target.closest('.incidence');
+
+    if (!incidenceEl) return;
+
+    const incidence = this.#incidences.find(
+      inc => inc.id === incidenceEl.dataset.id.trim()
+    );
+
+    this.#map.setView(incidence.coords, 13, {
+      animate: true,
+      pan: {
+        duration: 1,
+      },
+    });
+  }
+
+  //Save incidence in Local Storage
+  setLocalStorage() {
+    localStorage.setItem('incidences', JSON.stringify(this.#incidences));
+  }
+
+  getLocalStorage() {
+    const data = JSON.parse(localStorage.getItem('incidences'));
+
+    if (!data) return;
+
+    this.#incidences = data;
+    this.#incidences.forEach(incidence => {
+      this._renderIncidence(incidence);
+    });
+  }
+
+  resetLocalStorage() {
+    localStorage.removeItem('inciden#incidences');
+    location.reload();
   }
 }
 const app = new App();
