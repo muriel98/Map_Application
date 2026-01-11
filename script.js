@@ -5,11 +5,18 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 const form = document.querySelector('.form');
 const containerIncidences = document.querySelector('.incidences');
-const inputType = document.querySelector('.form__input--type');
 
+const inputType = document.querySelector('.form__input--type');
+const inputTrash =  document.querySelector('#trash-type');
 const inputSurface = document.querySelector('.form__input--surface');
-const inputTrash = document.querySelector('.form__input--trash');
 const inputDescription = document.querySelector('.form__input--description');
+
+const btnPrev = document.querySelector('.pagination__btn--prev');
+const btnNext = document.querySelector('.pagination__btn--next');
+const btnCloseForm = document.querySelector('.btn__close_form');
+const btnSubmitForm = document.querySelector('.form__btn');
+
+const curPageEl = document.querySelector('.pagination__current');
 
 class Incidence {
   date = new Date();
@@ -44,6 +51,10 @@ class App {
   #map;
   #mapEvent;
   #incidences = [];
+  #currentPage = 1;
+  #itemsPerPage = 5;
+  #markers = [];
+
 
   constructor() {
     //Get users position
@@ -54,9 +65,13 @@ class App {
 
     //Event Handlers
     form.addEventListener('submit', this._newIncidence.bind(this));
+    btnCloseForm.addEventListener('click', this._hideForm.bind(this));
 
     inputType.addEventListener('change', this._toggleField.bind(this));
     containerIncidences.addEventListener('click', this.moveToPopup.bind(this));
+    btnPrev.addEventListener('click', this._goToPrevPage.bind(this))
+    btnNext.addEventListener('click',this._goToNextPage.bind(this) )
+    
 
     containerIncidences.addEventListener(
       'click',
@@ -66,7 +81,7 @@ class App {
   //************** EVENT HANDLERS ***********
 
   _deleteIncidence(e) {
-    const btn = e.target.closest('.incidence__btn-delete');
+    const btn = e.target.closest('.incidence__delete');
     if (!btn) return;
 
     const incidenceEl = btn.closest('.incidence');
@@ -77,8 +92,14 @@ class App {
     );
     this.#incidences.splice(index, 1);
     incidenceEl.remove();
+    const markerIndex = this.#markers.findIndex(m=> m.id === incidenceId);
+
+    
+   this.#map.removeLayer(this.#markers[markerIndex]);
+
+
     this.setLocalStorage();
-    console.log(this.#incidences);
+   
   }
   _getPosition() {
     navigator.geolocation.getCurrentPosition(
@@ -109,9 +130,11 @@ class App {
   _showForm(mapE) {
     this.#mapEvent = mapE;
     form.classList.remove('hidden');
+    console.log('llega')
   }
 
   _hideForm() {
+   
     inputDescription.value = inputSurface.value = inputTrash.value = '';
     document.getElementById('u1').checked = true;
     form.style.display = 'none';
@@ -141,15 +164,17 @@ class App {
     const { lat, lng } = this.#mapEvent.latlng;
     const coords = [lat, lng];
     let incidence;
-    console.log(urgencyLevel);
+    
     if (type === 'infrastucture') {
       const surface = +inputSurface.value;
+      console.log(surface)
 
       if (!validInputs(surface) || !positiveValues(surface))
         return alert('Las unidades deben estar en positivo');
 
       incidence = new Infrastucture(coords, urgencyLevel, description, surface);
     }
+    
 
     if (type === 'maintenance') {
       const trashType = inputTrash.value;
@@ -163,73 +188,109 @@ class App {
 
     this._renderMarker(incidence);
     this._hideForm();
-    this._renderIncidence(incidence);
+    this._renderIncidenceList(incidence);
     this.setLocalStorage();
   }
 
   _renderMarker(incidence) {
-    L.marker(incidence.coords)
+
+    const customIcon = L.divIcon({
+      className: 'custom-marker-wrapper',
+      html: `<div class="marker-pin ${incidence.type}"></div>`,
+      iconSize: [30,30],
+      iconAnchor: [15,15]
+    });
+
+    const marker = L.marker(incidence.coords, {icon: customIcon})
       .addTo(this.#map)
       .bindPopup(
         L.popup({
           maxWidth: 250,
           minWidth: 100,
-          autoClose: false,
+          autoClose: true,
           closeOnClick: false,
-          className: `${incidence.type} -popup`,
+          className: `${incidence.type}-popup`,
         })
       )
       .setPopupContent(
         `${
-          incidence.type === 'infrastucture' ? 'Infrastuctura' : 'Mantenimiento'
-        }`
+          incidence.description}`
       )
       .openPopup();
+      marker.id = incidence.id;
+      this.#markers.push(marker);
+
+      setTimeout(()=>{
+        marker.closePopup()
+      } , 3000);
   }
 
   _renderIncidence(incidence) {
+
+    
+    const dateOptions = {day: 'numeric', month: 'short', hour:'numeric', minute: 'numeric'};
+    const formattedDate = new Intl.DateTimeFormat('es-ES', dateOptions).format(new Date(incidence.date))
     const dots = '●'.repeat(incidence.urgencyLevel).padEnd(5, '○');
     let html = `
-    <li class="incidence ${
-      incidence.type === 'infrastucture'
-        ? 'incidence__infrastucture'
-        : 'incidence__maintenance'
-    } incidence--${incidence.type}" data-id="${incidence.id}">
-  
-      <div class ="incidence__urgency-bar">
-      <span class="incidence__urgency-dots">${dots}</span>
-      <div class = "Incidence__container">
+    <li class="incidence incidence--${incidence.type}" data-id="${incidence.id}">
+      
+      <span class="incidence__date">${formattedDate}</span>
+      <button class="incidence__delete btn__delete" title="Eliminar">
+        <i data-lucide="x"></i>
+      </button>
 
-      <div class="incidence__header">
+      <div class="incidence__content">
         <h2 class="incidence__title">${incidence.description}</h2>
-        <button class="incidence__btn-delete" title="Eliminar">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-      
-      </div>
-      
+        
+        <div class="incidence__urgency-bar">
+          <span class="incidence__urgency-dots">${dots}</span>
+        </div>
 
-      <div class="incidence__body">
         <div class="incidence__data">
-       
-        <span class="incidence__value">
-        ${
-          incidence.type === 'infrastucture'
-            ? incidence.surface
-            : incidence.trashType
-        }</span>
-        <span class="incidence__unit">
-        ${incidence.type === 'infrastucture' ? 'm²' : 'Tipo de residuo:'}
-        </span>
-      
-      </div></div>
-    </li>`;
+          <span class="incidence__value">
+            ${incidence.type === 'infrastucture' ? `${incidence.surface} m²` : `${incidence.trashType}`}
+          </span>
+          <span class="incidence__unit">
+            ${incidence.type === 'maintenance' ? '' : ''}
+          </span>
+        </div>
+      </div>
 
-    form.insertAdjacentHTML('afterend', html);
-    console.log(incidence.type);
-    lucide.createIcons();
-  }
+    </li>`;
+  containerIncidences.insertAdjacentHTML('beforeend', html);
+ 
+}
+
+_renderIncidenceList (){
+  containerIncidences.innerHTML = "";
+  const start = (this.#currentPage - 1) * this.#itemsPerPage;
+  const end = this.#currentPage * this.#itemsPerPage;
+
+  const pageIncidences = this.#incidences.slice(start, end);
+
+  pageIncidences.forEach(incidence => this._renderIncidence(incidence))
+
+ lucide.createIcons();
+
+  this._updatePagination();
+}
+
+_updatePagination (){
+  const totalPages = Math.ceil (this.#incidences.length/this.#itemsPerPage);
+  curPageEl.textContent = this.#currentPage;
+  btnPrev.disabled = this.#currentPage === 1;
+  btnNext.disabled = this.#currentPage === totalPages || totalPages === 0;
+}
+
+_goToNextPage(){
+  this.#currentPage ++;
+  this._renderIncidenceList();
+}
+
+_goToPrevPage(){
+  this.#currentPage --;
+  this._renderIncidenceList();
+}
 
   moveToPopup(e) {
     const incidenceEl = e.target.closest('.incidence');
@@ -260,7 +321,7 @@ class App {
 
     this.#incidences = data;
     this.#incidences.forEach(incidence => {
-      this._renderIncidence(incidence);
+      this._renderIncidenceList(incidence);
     });
   }
 

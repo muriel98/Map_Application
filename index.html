@@ -33,9 +33,13 @@
     <div class="sidebar">
       <img src="logo_.png" alt="Logo" class="logo" />
 
-      <ul class="incidences">
+     
         <form class="form hidden">
+        
           <div class="form__row">
+              <button type="button" class="btn__delete btn__close_form" title="Eliminar">
+        <i data-lucide="x"></i>
+      </button>
             <label class="form__label">Tipo</label>
             <select class="form__input form__input--type">
               <option value="infrastucture">Infraestructura</option>
@@ -48,12 +52,16 @@
             <input class="form__input form__input--surface" placeholder="m²" />
           </div>
 
-          <div class="form__row form__row--dynamic form__row--hidden">
-            <label class="form__label form__label--trash">Residuo</label>
-            <input
-              class="form__input form__input--trash"
-              placeholder="Ej: Escombros"
-            />
+          <div class=" form__row form__row-trash form__row--dynamic form__row--hidden">
+            <label for="trash-type" class="form__label form__label--trash">Tipo de residuo</label>
+            <select id="trash-type" class="form__input form__input--trash-select" name="trash">
+              <option value="Basura orgánica">Basura orgánica</option>
+              <option value="Vidrios">Vidrios</option>
+              <option value="Productos químicos">Productos Químicos</option>
+              <option value="Escombros">Escombros</option>
+              <option value="Otros">Otro</option>
+            </select>
+          
           </div>
 
           <div class="form__row form__row--full">
@@ -94,10 +102,28 @@
               placeholder="Describe lo que ocurre..."
             ></textarea>
           </div>
+          
 
           <button type="submit" class="form__btn">OK</button>
         </form>
-      </ul>
+         <ul class="incidences"></ul>
+        
+          </ul>
+            <div class="pagination">
+            <button class="pagination__btn pagination__btn--prev" disabled>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+
+            <span class="pagination__current">1</span>
+
+            <button class="pagination__btn pagination__btn--next">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
     </div>
 
     <div id="map"></div>
