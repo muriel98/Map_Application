@@ -5,44 +5,78 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 const form = document.querySelector('.form');
 const containerIncidences = document.querySelector('.incidences');
+const filterForm = document.querySelector('.filter-panel');
+const urgencyContainer = document.querySelector('.urgency-rating--filter');
 
 const inputType = document.querySelector('.form__input--type');
 const inputTrash =  document.querySelector('#trash-type');
 const inputSurface = document.querySelector('.form__input--surface');
 const inputDescription = document.querySelector('.form__input--description');
+const filterTypeInput = document.querySelector('.filter__input');
 
 const btnPrev = document.querySelector('.pagination__btn--prev');
 const btnNext = document.querySelector('.pagination__btn--next');
 const btnCloseForm = document.querySelector('.btn__close_form');
 const btnSubmitForm = document.querySelector('.form__btn');
+const btnViewAll = document.querySelector('.btn__view-all');
+const btnFilter = document.querySelector ('.btn__filter');
+const btnDeleteFilter = document.querySelector ('.filter__btn-reset');
 
 const curPageEl = document.querySelector('.pagination__current');
 
 class Incidence {
-  date = new Date();
-  coords;
-  id = (Date.now() + '').slice(-10);
+ 
 
-  constructor(coords, urgencyLevel, description) {
+  constructor(coords, urgencyLevel, description, 
+    date, id) {
     this.coords = coords;
     this.urgencyLevel = urgencyLevel;
     this.description = description;
+    this.date = date !== undefined ? new Date (date) :  new Date();
+    this.id = id !== undefined ? id : (Date.now() + '').slice(-10);
+    
+  }
+
+  getUrgencyLevel(){
+    return '●'.repeat(this.urgencyLevel).padEnd(5, '○');
+  }
+  getDateFormat (){
+    const dateOptions = {day: 'numeric', month: 'short', hour:'numeric', minute: 'numeric'};
+    const formattedDate = new Intl.DateTimeFormat('es-ES', dateOptions).format(new Date(this.date))
+    return formattedDate;
   }
 }
 
 class Infrastucture extends Incidence {
   type = 'infrastucture';
-  constructor(coords, urgencyLevel, description, surface) {
-    super(coords, urgencyLevel, description);
+  constructor(coords, urgencyLevel, description, surface, date, id) {
+    super(coords, urgencyLevel, description,date,id );
     this.surface = surface;
+  }
+
+  getPopUp (){
+    return `Infrastuctura: ${this.description}`
+  }
+
+  getSpecificData (){
+    return `${ this.surface} m²`
+    
   }
 }
 
 class Maintenance extends Incidence {
   type = 'maintenance';
-  constructor(coords, urgencyLevel, description, trashType) {
-    super(coords, urgencyLevel, description);
+  constructor(coords, urgencyLevel, description, trashType, date, id) {
+    super(coords, urgencyLevel, description, date, id);
     this.trashType = trashType;
+  }
+
+   getPopUp (){
+    return `Infrastuctura: ${this.description}`
+  }
+  getSpecificData (){
+    return `${ this.trashType}`
+    
   }
 }
 
@@ -54,6 +88,9 @@ class App {
   #currentPage = 1;
   #itemsPerPage = 5;
   #markers = [];
+  #currentFilteredList = [];
+
+
 
 
   constructor() {
@@ -64,13 +101,17 @@ class App {
     this.getLocalStorage();
 
     //Event Handlers
+    urgencyContainer.addEventListener('change', this.filterUrgencyResults.bind(this));
+    filterTypeInput.addEventListener('change', this.filterTypeResults.bind(this));
+    btnDeleteFilter.addEventListener('click', this.resetFilter.bind(this))
     form.addEventListener('submit', this._newIncidence.bind(this));
     btnCloseForm.addEventListener('click', this._hideForm.bind(this));
-
+    btnFilter.addEventListener('click', this.toggleFilterForm.bind(this));
     inputType.addEventListener('change', this._toggleField.bind(this));
     containerIncidences.addEventListener('click', this.moveToPopup.bind(this));
-    btnPrev.addEventListener('click', this._goToPrevPage.bind(this))
-    btnNext.addEventListener('click',this._goToNextPage.bind(this) )
+    btnPrev.addEventListener('click', this._goToPrevPage.bind(this));
+    btnNext.addEventListener('click',this._goToNextPage.bind(this) );
+    btnViewAll.addEventListener('click', this._viewAllMarkers.bind(this));
     
 
     containerIncidences.addEventListener(
@@ -94,7 +135,7 @@ class App {
     incidenceEl.remove();
     const markerIndex = this.#markers.findIndex(m=> m.id === incidenceId);
 
-    
+    this._updatePagination();
    this.#map.removeLayer(this.#markers[markerIndex]);
 
 
@@ -114,7 +155,6 @@ class App {
     const { latitude } = position.coords;
     const { longitude } = position.coords;
     const coords = [latitude, longitude];
-    console.log(coords);
     this.#map = L.map('map').setView(coords, 13);
     this.#incidences.forEach(incidence => {
       this._renderMarker(incidence);
@@ -130,11 +170,10 @@ class App {
   _showForm(mapE) {
     this.#mapEvent = mapE;
     form.classList.remove('hidden');
-    console.log('llega')
+    
   }
 
   _hideForm() {
-   
     inputDescription.value = inputSurface.value = inputTrash.value = '';
     document.getElementById('u1').checked = true;
     form.style.display = 'none';
@@ -144,6 +183,36 @@ class App {
   _toggleField() {
     inputSurface.closest('.form__row').classList.toggle('form__row--hidden');
     inputTrash.closest('.form__row').classList.toggle('form__row--hidden');
+  }
+
+  filterTypeResults (e){
+    const selectedValue = e.target.value;
+    this.#currentFilteredList = selectedValue === 'all'? this.#incidences : 
+    this.#incidences
+    .filter(inc => inc.type=== selectedValue);
+    this._renderIncidenceList(this.#currentFilteredList);
+    this.#currentPage = 1;
+    this.toggleFilterForm();
+  }
+
+  filterUrgencyResults (e){
+    const selectedValue = +e.target.value;
+    this.#currentFilteredList = !selectedValue ? 
+    this.#incidences : 
+    this.#incidences.filter(inc => inc.urgencyLevel === selectedValue);
+    this._renderIncidenceList(this.#currentFilteredList);
+    this.#currentPage = 1;
+    this.toggleFilterForm();
+  }
+  resetFilter () {
+    this.#currentFilteredList = this.#incidences;
+    this._renderIncidenceList();
+    this.#currentPage = 1;
+    this.toggleFilterForm();
+  }
+
+  toggleFilterForm () {
+    filterForm.classList.toggle('hidden');
   }
 
   _newIncidence(e) {
@@ -172,7 +241,10 @@ class App {
       if (!validInputs(surface) || !positiveValues(surface))
         return alert('Las unidades deben estar en positivo');
 
-      incidence = new Infrastucture(coords, urgencyLevel, description, surface);
+      incidence = new Infrastucture(coords,
+       urgencyLevel, 
+       description, 
+       surface);
     }
     
 
@@ -180,15 +252,20 @@ class App {
       const trashType = inputTrash.value;
       if (!validInputs(urgencyLevel))
         return alert('Inputs must be positive numbers');
-      incidence = new Maintenance(coords, urgencyLevel, description, trashType);
+      incidence = new Maintenance(coords, 
+        urgencyLevel, 
+        description, 
+        trashType);
     }
 
-    this.#incidences.push(incidence);
-    console.log(this.#incidences);
+    this.#incidences.unshift(incidence);
+    this.#currentFilteredList = this.#incidences;
+   
 
     this._renderMarker(incidence);
     this._hideForm();
-    this._renderIncidenceList(incidence);
+    this.#currentPage = 1;
+    this._renderIncidenceList(this.#incidences);
     this.setLocalStorage();
   }
 
@@ -212,10 +289,7 @@ class App {
           className: `${incidence.type}-popup`,
         })
       )
-      .setPopupContent(
-        `${
-          incidence.description}`
-      )
+      .setPopupContent(incidence.getPopUp())
       .openPopup();
       marker.id = incidence.id;
       this.#markers.push(marker);
@@ -225,16 +299,23 @@ class App {
       } , 3000);
   }
 
-  _renderIncidence(incidence) {
+  _viewAllMarkers(){
+    if (this.#markers.length && this.#markers.length>0 ){
+      const group = new L.featureGroup(this.#markers);
 
-    
-    const dateOptions = {day: 'numeric', month: 'short', hour:'numeric', minute: 'numeric'};
-    const formattedDate = new Intl.DateTimeFormat('es-ES', dateOptions).format(new Date(incidence.date))
-    const dots = '●'.repeat(incidence.urgencyLevel).padEnd(5, '○');
+      this.#map.fitBounds(group.getBounds(), {
+        padding: [50, 50]
+      })
+      }
+    }
+   
+
+  _renderIncidence(incidence) {
+    const dots = incidence.getUrgencyLevel();
     let html = `
     <li class="incidence incidence--${incidence.type}" data-id="${incidence.id}">
       
-      <span class="incidence__date">${formattedDate}</span>
+      <span class="incidence__date">${incidence.getDateFormat()}</span>
       <button class="incidence__delete btn__delete" title="Eliminar">
         <i data-lucide="x"></i>
       </button>
@@ -248,10 +329,7 @@ class App {
 
         <div class="incidence__data">
           <span class="incidence__value">
-            ${incidence.type === 'infrastucture' ? `${incidence.surface} m²` : `${incidence.trashType}`}
-          </span>
-          <span class="incidence__unit">
-            ${incidence.type === 'maintenance' ? '' : ''}
+            ${incidence.getSpecificData()}
           </span>
         </div>
       </div>
@@ -261,14 +339,13 @@ class App {
  
 }
 
-_renderIncidenceList (){
+_renderIncidenceList (incidences = this.#incidences){
   containerIncidences.innerHTML = "";
   const start = (this.#currentPage - 1) * this.#itemsPerPage;
   const end = this.#currentPage * this.#itemsPerPage;
+  const pageIncidences = incidences.slice(start, end);
 
-  const pageIncidences = this.#incidences.slice(start, end);
-
-  pageIncidences.forEach(incidence => this._renderIncidence(incidence))
+  pageIncidences.forEach(incidence => this._renderIncidence(incidence));
 
  lucide.createIcons();
 
@@ -284,12 +361,12 @@ _updatePagination (){
 
 _goToNextPage(){
   this.#currentPage ++;
-  this._renderIncidenceList();
+  this._renderIncidenceList(this.#currentFilteredList);
 }
 
 _goToPrevPage(){
   this.#currentPage --;
-  this._renderIncidenceList();
+  this._renderIncidenceList(this.#currentFilteredList);
 }
 
   moveToPopup(e) {
@@ -315,18 +392,38 @@ _goToPrevPage(){
   }
 
   getLocalStorage() {
+    
+    
     const data = JSON.parse(localStorage.getItem('incidences'));
-
     if (!data) return;
 
-    this.#incidences = data;
-    this.#incidences.forEach(incidence => {
-      this._renderIncidenceList(incidence);
-    });
+   
+    
+    this.#incidences = data.map(el => {
+      if (el.type === 'maintenance')
+       return new Maintenance (el.coords, 
+        el.urgencyLevel, 
+        el.description, 
+        el.trashType, 
+        el.date, 
+        el.id);
+
+        if (el.type === 'infrastucture')
+        return new Infrastucture (el.coords, 
+        el.urgencyLevel, 
+        el.description, 
+        el.surface, 
+        el.date, 
+        el.id)
+
+    })
+    
+
+    this._renderIncidenceList();
   }
 
   resetLocalStorage() {
-    localStorage.removeItem('inciden#incidences');
+    localStorage.removeItem('#incidences');
     location.reload();
   }
 }

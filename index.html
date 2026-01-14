@@ -123,7 +123,45 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
               </svg>
             </button>
+            <button class="pagination__btn btn__view-all" title="Ver todos los marcadores">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  </button>
+  <button class="pagination__btn btn__filter" title="Filtrar incidencias">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+    </svg>
+  </button>
+</div>
+
+<div class="filter-panel hidden ">
+  <div class="filter__section">
+    <h4 class="filter__title">Tipo de Incidencia</h4>
+    <select class="filter__input filter__type">
+      <option value="all">Todas</option>
+      <option value="infrastucture">Infraestructura</option>
+      <option value="maintenance">Mantenimiento</option>
+    </select>
+  </div>
+
+  <div class="filter__section">
+    <h4 class="filter__title">Urgencia mínima</h4>
+    <div class="urgency-rating urgency-rating--filter">
+      <input type="radio" name="filter-urgency" value="5" id="fu5" /><label for="fu5">●</label>
+      <input type="radio" name="filter-urgency" value="4" id="fu4" /><label for="fu4">●</label>
+      <input type="radio" name="filter-urgency" value="3" id="fu3" /><label for="fu3">●</label>
+      <input type="radio" name="filter-urgency" value="2" id="fu2" /><label for="fu2">●</label>
+      <input type="radio" name="filter-urgency" value="1" id="fu1"  /><label for="fu1">●</label>
+
+    </div>
+    </div>
+ 
+  
+  <button class="filter__btn-reset">Limpiar Filtros</button>
           </div>
+           </div>
     </div>
 
     <div id="map"></div>
