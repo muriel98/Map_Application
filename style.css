@@ -306,7 +306,8 @@ a:visited {
   border-color: rgba(159, 167, 43, 0.8);
 }
 
-.incidence--maintenance:hover {
+.incidence--maintenance:hover,
+.incidence--infrastucture:active {
   background: linear-gradient(135deg, rgba(62, 92, 199, 0.6), rgba(62, 92, 199, 0.4)) !important;
   border-color: rgba(62, 92, 199, 0.8);
 }
@@ -376,10 +377,98 @@ a:visited {
   stroke-width: 2.5px; 
 }
 
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px); 
+  z-index: 2000; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.modal {
+  background-color: rgba(172, 85, 85, 0.7);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.modal__header {
+  margin-bottom: 1.5rem;
+}
+
+.modal__title {
+  font-size: 1.8rem;
+  color: #ebeaea;
+  margin-top: 0.5rem;
+}
+
+.modal__text {
+  font-size: 1.2rem;
+  color: #c3c2c2;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.modal__actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn {
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn--secondary {
+  background-color: #eee;
+  color: #333;
+}
+
+.btn--danger {
+  background-color: rgba(
+    255,
+    255,
+    255,
+    0.2
+  );
+  color: #fff;
+}
+
+.btn--danger:hover {
+  background-color: #e03131;
+  transform: scale(1.03);
+  box-shadow: 0 0 1px rgb(10, 10, 10, 0.5);
+}
+
+
+.hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .incidence__content {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-top: 15px;
   gap: 0.5rem;
 }
 
@@ -389,8 +478,24 @@ a:visited {
   width: 80%;
 }
 
+.incidence__location {
+  display: block; 
+  font-size: 1rem;
+  color: #adb5bd; 
+  font-weight: 400;
+  position: absolute;
+  left: 0;
+  margin-left: 20px;
+  margin-top: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px; 
+}
+
 .incidence__urgency-bar {
   margin-bottom: 1.2rem;
+  margin-top: -1.2rem;
 }
 
 .incidence__urgency-dots {
@@ -428,7 +533,8 @@ a:visited {
 .btn__filter {
   margin-left: 1rem;
   position: absolute;
-  right: 0;
+  right: 0; 
+  
 }
 
 /*Filter*/

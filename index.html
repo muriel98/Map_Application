@@ -106,6 +106,21 @@
 
           <button type="submit" class="form__btn">OK</button>
         </form>
+        <div class="modal-overlay hidden">
+          <div class="modal">
+           <div class="modal__header">
+            <i data-lucide="alert-triangle" class="modal__icon"></i>
+            <h2 class="modal__title">¿Estás seguro?</h2>
+          </div>
+    <p class="modal__text">
+      Esta acción no se puede deshacer. La incidencia se eliminará permanentemente de tu registro.
+    </p>
+    <div class="modal__actions">
+      <button class="btn btn--secondary btn--close-modal">Cancelar</button>
+      <button class="btn btn--danger btn--confirm-delete">Eliminar incidencia</button>
+    </div>
+  </div>
+</div>
          <ul class="incidences"></ul>
         
           </ul>
