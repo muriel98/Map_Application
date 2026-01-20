@@ -355,6 +355,12 @@ class App {
       this.#currentPage = page;
       this._renderIncidenceList();
     }
+  document.querySelectorAll('.incidence').forEach(el => {
+
+    el.classList.
+    remove('incidence--infrastucture_active',
+      'incidence--maintenance_active');
+    });
    
     setTimeout (() => {
       const incidenceEl = document.querySelector(`[data-id="${clickedMarkerId}"]`);
@@ -362,6 +368,8 @@ class App {
       behavior: 'smooth',
       block: 'center'
     });
+    
+
     incidenceEl.classList.add(`incidence--${incidenceEl.dataset.type}_active`);
     }, 100)
     
