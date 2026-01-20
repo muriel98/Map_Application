@@ -333,11 +333,40 @@ class App {
       .setPopupContent(incidence.getPopUp())
       .openPopup();
       marker.id = incidence.id;
+      marker.on('click', this._handleMarkerClick.bind(this));
       this.#markers.push(marker);
+
+     
 
       setTimeout(()=>{
         marker.closePopup()
       } , 3000);
+  }
+
+  _handleMarkerClick(e) {
+    
+    const clickedMarkerId = e.target.id;
+
+    const index = this.#incidences.findIndex(el => el.id === clickedMarkerId) + 1;
+
+    const page = Math.ceil(index / this.#itemsPerPage);
+
+    if ( this.#currentPage !== page){
+      this.#currentPage = page;
+      this._renderIncidenceList();
+    }
+   
+    setTimeout (() => {
+      const incidenceEl = document.querySelector(`[data-id="${clickedMarkerId}"]`);
+      incidenceEl.scrollIntoView ({
+      behavior: 'smooth',
+      block: 'center'
+    });
+    incidenceEl.classList.add(`incidence--${incidenceEl.dataset.type}_active`);
+    }, 100)
+    
+
+    
   }
 
   _viewAllMarkers(){
@@ -354,7 +383,7 @@ class App {
   _renderIncidence(incidence) {
     const dots = incidence.getUrgencyLevel();
     let html = `
-    <li class="incidence incidence--${incidence.type}" data-id="${incidence.id}">
+    <li class="incidence incidence--${incidence.type}" data-id="${incidence.id}" data-type="${incidence.type}">
   
   <div class="incidence__header">
     <span class="incidence__date">${incidence.getDateFormat()}</span>
@@ -422,6 +451,14 @@ _goToPrevPage(){
     const incidence = this.#incidences.find(
       inc => inc.id === incidenceEl.dataset.id.trim()
     );
+
+    document.querySelectorAll('.incidence').forEach(el => {
+      el.classList.
+      remove('incidence--infrastucture_active', 'incidence--maintenance_active')
+    })
+    const activeClass = `incidence--${incidence.type}_active`;
+    incidenceEl.classList.add(activeClass);
+
     
     this._renderMarker(incidence);
 

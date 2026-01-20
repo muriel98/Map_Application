@@ -306,11 +306,25 @@ a:visited {
   border-color: rgba(159, 167, 43, 0.8);
 }
 
-.incidence--maintenance:hover,
-.incidence--infrastucture:active {
+.incidence--infrastucture_active {
+  background: linear-gradient(135deg, rgba(159, 167, 43, 0.6), rgba(159, 167, 43, 0.4)) !important;
+  border-color: rgba(159, 167, 43, 0.8);
+  transform: scale(0.95);
+  
+}
+
+.incidence--maintenance:hover{
   background: linear-gradient(135deg, rgba(62, 92, 199, 0.6), rgba(62, 92, 199, 0.4)) !important;
   border-color: rgba(62, 92, 199, 0.8);
 }
+
+.incidence--maintenance_active{
+  background: linear-gradient(135deg, rgba(62, 92, 199, 0.6), rgba(62, 92, 199, 0.4)) !important;
+  border-color: rgba(62, 92, 199, 0.8);
+  transform: scale(0.95);
+  
+}
+
 
 
 .incidence {
